@@ -3,6 +3,7 @@
 import js from "./exec/javascript.js";
 import codapi from "./exec/codapi.js";
 import http from "./exec/http.js";
+import python from "./exec/python.js";
 import text from "./text.js";
 
 const defaultCommand = "run";
@@ -12,7 +13,24 @@ const defaultCommand = "run";
 const execMap = {
     javascript: js.exec,
     fetch: http.exec,
+    python: {
+        isAvailable: python.isAvailable, 
+        exec: python.exec
+    }
 };
+
+const DEFAULT_EXEC_FUNC = codapi.exec;
+
+const getExecFunction = function(sandbox) {
+    const execFuncOrObj = execMap[sandbox];
+    
+    if(typeof execFuncOrObj === "object" 
+        && typeof execFuncOrObj["isAvailable"] === "function") {
+        return execFuncOrObj.isAvailable() ? execFuncOrObj.exec : DEFAULT_EXEC_FUNC;
+    }
+
+    return DEFAULT_EXEC_FUNC;   
+}
 
 // An Executor runs the code and shows the results.
 class Executor {
@@ -24,7 +42,7 @@ class Executor {
         this.url = url;
         this.template = template;
         this.files = files;
-        this.execFunc = execMap[sandbox] || codapi.exec;
+        this.execFunc = getExecFunction(sandbox)
     }
 
     // execute runs the code and shows the results.
